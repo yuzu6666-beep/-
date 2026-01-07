@@ -57,7 +57,7 @@
   }
   
   .label{
-    font-size:13px;
+    font-size:16px;
     color:var(--muted);
     font-weight:700;
   }
@@ -73,7 +73,7 @@
     padding:12px 12px;
     border:1px solid var(--line);
     border-radius:12px;
-    font-size:16px;
+    font-size:13px;
   }
   
   /* textarea を細めに */
@@ -284,3 +284,40 @@
       margin-left:8px;
     }
   }
+
+  /* ---- ボタンを内容の横へ ---- */
+.itemTop{
+    align-items: flex-start; /* 既存があればこのままでOK */
+  }
+  
+  .content{
+    min-width: 0;
+    flex: 1;
+  }
+  
+  /* 右側のボタン置き場 */
+  .actions.side{
+    flex: 0 0 auto;
+    margin-left: 10px;
+  }
+  
+/* ---- メモ表示 ---- */
+.memoView{
+    margin-top:6px;
+    font-size:14px;
+    color:var(--muted);
+    line-height:1.4;
+    white-space:pre-wrap;
+  }
+  
+  /* ---- メモ入力 ---- */
+  .memoInput{
+    width:100%;
+    margin-top:6px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    font-size:14px;
+    resize:vertical;
+  }
+  
