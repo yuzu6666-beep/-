@@ -10,9 +10,10 @@
   <main class="wrap">
     <header class="header">
       <div class="logo">未処理置き場<span class="dot">。</span></div>
-      <div class="tagline">考えてるだけで終わらない人のための、10秒ツール。</div>
+      <div class="tagline">未処理案件で脳のキャパが埋まっている人のための、10秒ツール。</div>
     </header>
 
+    <!-- 入力 -->
     <section class="card">
       <div class="field">
         <label class="label" for="taskInput">未処理を1つ書く</label>
@@ -24,8 +25,9 @@
             rows="2"
             placeholder="例：返信 / 書類 / 予約 / 片付け"
           ></textarea>
-          <button id="addBtn" class="btn primary">追加する</button>
-
+          <button id="addBtn" class="btn primary" type="button">追加する</button>
+        </div>
+      </div>
     </section>
 
     <!-- 未処理 -->
@@ -34,7 +36,7 @@
       <div id="openList" class="list"></div>
     </section>
 
-    <!-- 完了（別枠） -->
+    <!-- 完了 -->
     <section class="card">
       <h2 class="h2">完了</h2>
       <div id="doneList" class="list"></div>
@@ -44,4 +46,3 @@
   <script src="./app.js"></script>
 </body>
 </html>
-
