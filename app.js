@@ -131,7 +131,7 @@ function render() {
                 <div class="meta">
                   ${hasStep
                     ? `10秒：<strong>${escapeHtml(t.step2m)}</strong>`
-                    : `10秒はまだ決めてない。`
+                    : ``
                   }
                 </div>
 
