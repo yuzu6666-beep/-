@@ -54,9 +54,8 @@
   }
   
   textarea.input{
-    resize: vertical;
-    min-height:52px;
-    line-height:1.35;
+    min-height:40px;
+    padding:8px 12px;
   }
   
   /* 追加ボタンをtextareaと同じ高さに */
