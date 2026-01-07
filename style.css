@@ -57,7 +57,7 @@
     min-height:40px;
     padding:8px 12px;
   }
-  
+
   /* 追加ボタンをtextareaと同じ高さに */
   #addBtn{
     align-self:stretch;
@@ -203,5 +203,30 @@
   .hint{
     font-size:12px;
     color:var(--muted);
+  }
+  
+  /* ===== スマホ調整 ===== */
+@media (max-width: 480px) {
+
+    textarea.input{
+      min-height: 38px;   /* ← 太さを抑える */
+      padding: 8px 12px;  /* ← 縦を詰める */
+      line-height: 1.25;
+    }
+  
+  }
+
+  @media (max-width: 480px) {
+
+    /* 完了カードは右上に削除を固定 */
+    .doneItem .itemTop{
+      align-items: flex-start;
+    }
+  
+    .doneItem .actions{
+      flex: 0 0 auto;
+      margin-left: 8px;
+    }
+  
   }
   
