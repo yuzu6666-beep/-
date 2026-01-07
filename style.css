@@ -331,6 +331,7 @@
     .memoInput{
       padding-right:68px;
       padding-bottom:36px;
+      font-size:16px;
     }
   
     /* 完了の削除が下に落ちにくく */
@@ -340,3 +341,4 @@
     }
   }
   
+
