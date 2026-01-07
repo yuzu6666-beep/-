@@ -1,24 +1,36 @@
-// ====== 未処理。 (完了は別枠カード / デフォルト折りたたみ + 閉じる導線) ======
+// ====== 未処理。 (メモボタン式 / 完了ボタンのみ / 横配置 / 完了に削除) ======
 
-const STORAGE_KEY = "mishori_v10";
+const STORAGE_KEY = "mishori_v12";
 
 // ---- utils ----
 function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+// ---- state ----
+let state = loadState();
+
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return { tasks: [], deciding: null, showDone: false };
+  if (!raw) return { tasks: [], showDone:false, editingMemo:null };
   try {
     const s = JSON.parse(raw);
     return {
-      tasks: s.tasks || [],
-      deciding: null,
-      showDone: s.showDone ?? false
+      tasks: s.tasks ?? [],
+      showDone: s.showDone ?? false,
+      editingMemo: null
     };
   } catch {
-    return { tasks: [], deciding: null, showDone: false };
+    return { tasks: [], showDone:false, editingMemo:null };
   }
 }
 
@@ -32,280 +44,174 @@ function saveState() {
   );
 }
 
-function escapeHtml(str) {
-  return String(str ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
 // ---- DOM ----
-const taskInput = document.getElementById("taskInput");
-const addBtn = document.getElementById("addBtn");
-const openListEl = document.getElementById("openList");
-const doneListEl = document.getElementById("doneList");
-const doneToggleEl = document.getElementById("doneToggle");
-const doneCardEl = document.getElementById("doneCard") || doneToggleEl?.closest(".card");
-
-// ---- state ----
-let state = loadState();
+const taskInput   = document.getElementById("taskInput");
+const addBtn      = document.getElementById("addBtn");
+const openListEl  = document.getElementById("openList");
+const doneListEl  = document.getElementById("doneList");
+const doneToggle  = document.getElementById("doneToggle");
 
 // ---- helpers ----
-function findTask(id) {
+function findTask(id){
   return state.tasks.find(t => t.id === id);
 }
 
 // ---- actions ----
-function openDecide(id) {
-  state.deciding = id;
-  render();
-}
-
-function decideSave(id, value) {
-  const t = findTask(id);
-  if (!t) return;
-  const v = (value ?? "").trim();
-  if (!v) return;
-  t.step2m = v;
-  state.deciding = null;
+function toggleDoneCard(next){
+  state.showDone = typeof next === "boolean" ? next : !state.showDone;
   saveState();
   render();
 }
 
-function decideSkip() {
-  state.deciding = null;
-  render();
-}
-
-function decideFinish(id) {
+function toggleStatus(id){
   const t = findTask(id);
   if (!t) return;
-  t.status = "done";
-  t.doneAt = Date.now();
-  state.deciding = null;
+
+  if (t.status === "open") {
+    t.status = "done";
+    t.doneAt = Date.now();
+  } else {
+    t.status = "open";
+    t.doneAt = null;
+  }
   saveState();
   render();
 }
 
-function removeTask(id) {
+function removeTask(id){
   if (!confirm("削除する？")) return;
   state.tasks = state.tasks.filter(t => t.id !== id);
+  if (state.editingMemo === id) state.editingMemo = null;
   saveState();
   render();
 }
 
-function toggleDone(next) {
-  state.showDone = (typeof next === "boolean") ? next : !state.showDone;
+function openMemo(id){
+  state.editingMemo = id;
+  render();
+}
+
+function saveMemo(id, value){
+  const t = findTask(id);
+  if (!t) return;
+  t.memo = value.trim();
+  state.editingMemo = null;
   saveState();
   render();
 }
 
 // ---- render ----
-function render() {
-  const open = state.tasks
-    .filter(t => t.status === "open")
-    .sort((a,b) => a.createdAt - b.createdAt);
+function render(){
+  const open = state.tasks.filter(t=>t.status==="open");
+  const done = state.tasks.filter(t=>t.status==="done");
 
-  const done = state.tasks
-    .filter(t => t.status === "done")
-    .sort((a,b) => (b.doneAt || 0) - (a.doneAt || 0));
-
-  // ---- 未処理（open） ----
-  if (open.length === 0) {
+  // --- 未処理 ---
+  if (open.length === 0){
     openListEl.innerHTML = `<div class="small">未処理はない。</div>`;
   } else {
-    openListEl.innerHTML = open.map(t => {
-      const deciding = state.deciding === t.id;
-      const hasStep = t.step2m && t.step2m.trim();
-
+    openListEl.innerHTML = open.map(t=>{
+      const editing = state.editingMemo === t.id;
       return `
-        <div class="item">
-          <div class="itemTop">
-            <div class="left">
-              <span class="dotSmall"></span>
-              <div>
-                <div class="title">${escapeHtml(t.title)}</div>
-
-                <div class="meta">
-                  ${hasStep
-                    ? `10秒：<strong>${escapeHtml(t.step2m)}</strong>`
-                    : ``
-                  }
-                </div>
-
-                <div class="actions underMeta">
-                  <button class="linkbtn primary" type="button" data-action="done" data-id="${t.id}">やった</button>
-                  ${!hasStep
-                    ? `<button class="linkbtn" type="button" data-action="start" data-id="${t.id}">最初の10秒を決める</button>`
-                    : ``}
-                  <button class="linkbtn" type="button" data-action="delete" data-id="${t.id}">やらない</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          ${deciding ? `
-            <div class="meta" style="margin-top:10px;">
-              <div style="margin-bottom:6px;">次の10秒</div>
-              <input class="input" data-step-input data-for="${t.id}" value="" />
-
-              <div class="actions underMeta" style="margin-top:8px;">
-                <button class="linkbtn primary" type="button" data-action="save" data-id="${t.id}">これにする</button>
-                <button class="linkbtn" type="button" data-action="skip">今は決めない</button>
-                <button class="linkbtn" type="button" data-action="finish" data-id="${t.id}">完了</button>
-              </div>
-            </div>
-          ` : ``}
-        </div>
-      `;
-    }).join("");
-  }
-
-  // ---- 完了（折りたたみ + 開閉わかりやすく） ----
-  if (doneToggleEl) {
-    doneToggleEl.textContent = `完了（${done.length}）`;
-    doneToggleEl.classList.toggle("open", state.showDone);
-  }
-
-  if (!state.showDone) {
-    doneListEl.innerHTML = `
-      <button type="button" class="donePeek" data-done-toggle="open" aria-label="完了を開く">▼ タップして開く</button>
-    `;
-  } else if (done.length === 0) {
-    doneListEl.innerHTML = `
-      <div class="small">完了はまだない。</div>
-      <button type="button" class="doneClose" data-done-toggle="close" aria-label="完了を閉じる">▲ 閉じる</button>
-    `;
-  } else {
-    const items = done.map(t => `
-      <div class="item doneItem">
+      <div class="item">
         <div class="itemTop">
           <div class="left">
             <span class="dotSmall"></span>
-            <div>
+            <div class="content">
               <div class="title">${escapeHtml(t.title)}</div>
-              ${t.step2m
-                ? `<div class="meta">最後の10秒：<strong>${escapeHtml(t.step2m)}</strong></div>`
+
+              ${t.memo && !editing
+                ? `<div class="memoView">${escapeHtml(t.memo)}</div>`
+                : ``}
+
+              ${editing
+                ? `<textarea class="memoInput" data-memo-input data-id="${t.id}" rows="2"
+                    placeholder="メモを書く…">${escapeHtml(t.memo||"")}</textarea>`
                 : ``}
             </div>
           </div>
 
-          <div class="actions">
-            <button class="linkbtn" type="button" data-action="delete" data-id="${t.id}">削除</button>
+          <div class="actions side">
+            ${editing
+              ? `<button class="linkbtn primary" data-action="memo-save" data-id="${t.id}">保存</button>`
+              : `<button class="linkbtn" data-action="memo-open" data-id="${t.id}">メモ</button>`}
+            <button class="linkbtn primary" data-action="toggle" data-id="${t.id}">完了</button>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  // --- 完了 ---
+  doneToggle.textContent = `完了（${done.length}）`;
+  doneToggle.classList.toggle("open", state.showDone);
+
+  if (!state.showDone){
+    doneListEl.innerHTML =
+      `<button class="donePeek" data-done-toggle="open">▼ タップして開く</button>`;
+  } else if (done.length === 0){
+    doneListEl.innerHTML =
+      `<div class="small">完了はまだない。</div>
+       <button class="doneClose" data-done-toggle="close">▲ 閉じる</button>`;
+  } else {
+    doneListEl.innerHTML = done.map(t=>`
+      <div class="item doneItem">
+        <div class="itemTop">
+          <div class="left">
+            <span class="dotSmall"></span>
+            <div class="content">
+              <div class="title">${escapeHtml(t.title)}</div>
+              ${t.memo ? `<div class="memoView">${escapeHtml(t.memo)}</div>` : ``}
+            </div>
+          </div>
+          <div class="actions side">
+            <button class="linkbtn" data-action="toggle" data-id="${t.id}">未処理へ</button>
+            <button class="linkbtn" data-action="delete" data-id="${t.id}">削除</button>
           </div>
         </div>
       </div>
-    `).join("");
-
-    doneListEl.innerHTML = `
-      ${items}
-      <button type="button" class="doneClose" data-done-toggle="close" aria-label="完了を閉じる">▲ 閉じる</button>
-    `;
-  }
-
-  if (state.deciding) {
-    const focusEl = openListEl.querySelector(`input[data-step-input][data-for="${state.deciding}"]`);
-    if (focusEl) focusEl.focus();
+    `).join("") +
+    `<button class="doneClose" data-done-toggle="close">▲ 閉じる</button>`;
   }
 }
 
 // ---- events ----
-
-// ✅ スマホで「touch→click二重発火」して開閉が反転しないようガード
-let lastTouchAt = 0;
-function tapGuarded(handler) {
-  return (e) => {
-    // touch系が来た直後のclickは無視
-    if (e.type === "click" && Date.now() - lastTouchAt < 700) return;
-    if (e.type === "touchend") lastTouchAt = Date.now();
-    handler(e);
-  };
-}
-
-// 完了見出し：タップで開閉（touchend優先 + click保険）
-if (doneToggleEl) {
-  doneToggleEl.addEventListener("touchend", tapGuarded((e) => { e.preventDefault(); toggleDone(); }), { passive:false });
-  doneToggleEl.addEventListener("click", tapGuarded((e) => { e.preventDefault(); toggleDone(); }));
-}
-
-// 完了カード内：▼や「閉じる」ボタンも含めて、タップで確実に開閉（イベント委譲）
-if (doneCardEl) {
-  doneCardEl.addEventListener("touchend", tapGuarded((e) => {
-    const t = e.target.closest("[data-done-toggle]");
-    if (!t) return;
-    e.preventDefault();
-    toggleDone(t.dataset.doneToggle === "open");
-  }), { passive:false });
-
-  doneCardEl.addEventListener("click", tapGuarded((e) => {
-    const t = e.target.closest("[data-done-toggle]");
-    if (!t) return;
-    e.preventDefault();
-    toggleDone(t.dataset.doneToggle === "open");
-  }));
-}
-
-// クリック：open/done 両方まとめて
-function handleClick(e) {
+document.addEventListener("click", e=>{
   const btn = e.target.closest("button");
   if (!btn) return;
 
-  const id = btn.dataset.id;
-  const action = btn.dataset.action;
+  const { action, id, doneToggle } = btn.dataset;
 
-  if (action === "done" || action === "start") openDecide(id);
+  if (action === "toggle") toggleStatus(id);
+  if (action === "memo-open") openMemo(id);
+  if (action === "memo-save") {
+    const ta = document.querySelector(`textarea[data-memo-input][data-id="${id}"]`);
+    if (ta) saveMemo(id, ta.value);
+  }
   if (action === "delete") removeTask(id);
-  if (action === "skip") decideSkip();
-  if (action === "finish") decideFinish(id);
-
-  if (action === "save") {
-    const input = document.querySelector(`input[data-step-input][data-for="${id}"]`);
-    if (!input) return;
-    decideSave(id, input.value);
-  }
-}
-
-openListEl.addEventListener("click", handleClick);
-doneListEl.addEventListener("click", handleClick);
-
-// 次の10秒入力欄 Enter = これにする（イベント委譲）
-openListEl.addEventListener("keydown", (e) => {
-  const inp = e.target.closest('input[data-step-input]');
-  if (!inp) return;
-  if (e.isComposing) return;
-
-  if (e.key === "Enter") {
-    e.preventDefault();
-    decideSave(inp.dataset.for, inp.value);
-  }
+  if (doneToggle) toggleDoneCard(doneToggle==="open");
 });
 
 // ---- add ----
-addBtn.onclick = () => {
+addBtn.onclick = ()=>{
   const title = taskInput.value.trim();
   if (!title) return;
 
   state.tasks.push({
     id: uid(),
     title,
-    step2m: null,
-    status: "open",
+    memo: "",
+    status:"open",
     createdAt: Date.now(),
-    doneAt: null
+    doneAt:null
   });
 
-  taskInput.value = "";
+  taskInput.value="";
   saveState();
   render();
 };
 
-taskInput.addEventListener("keydown", (e) => {
-  if (e.isComposing) return;
-
-  if (e.key === "Enter") {
-    if (e.shiftKey) return; // Shift+Enter は改行
+taskInput.addEventListener("keydown", e=>{
+  if (e.key==="Enter" && !e.shiftKey){
     e.preventDefault();
     addBtn.click();
   }
