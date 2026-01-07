@@ -7,6 +7,7 @@
   }
   
   *{ box-sizing:border-box; }
+  
   body{
     margin:0;
     font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
@@ -37,7 +38,13 @@
     margin:12px 0;
   }
   
-  .row{ display:flex; gap:10px; }
+  /* 入力行：高さを揃える */
+  .row{
+    display:flex;
+    gap:10px;
+    align-items:stretch; /* ★ textarea とボタンの高さを揃える */
+  }
+  
   .input{
     flex:1;
     padding:12px 12px;
@@ -45,6 +52,23 @@
     border-radius:12px;
     font-size:16px;
   }
+  
+  textarea.input{
+    resize: vertical;
+    min-height:52px;
+    line-height:1.35;
+  }
+  
+  /* 追加ボタンをtextareaと同じ高さに */
+  #addBtn{
+    align-self:stretch;
+    height:auto;
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  
   .btn{
     padding:10px 12px;
     border:1px solid var(--line);
@@ -53,6 +77,7 @@
     cursor:pointer;
     white-space:nowrap;
   }
+  
   .btn.primary{
     border-color: transparent;
     background: var(--accent);
@@ -60,7 +85,12 @@
     font-weight:700;
   }
   
-  .h2{ margin:0 0 10px; font-size:16px; color:var(--muted); font-weight:700; }
+  .h2{
+    margin:0 0 10px;
+    font-size:16px;
+    color:var(--muted);
+    font-weight:700;
+  }
   
   .list{
     display:flex;
@@ -75,6 +105,11 @@
     display:flex;
     flex-direction:column;
     gap:10px;
+  }
+  
+  /* 完了は薄く */
+  .doneItem{
+    opacity:.6;
   }
   
   .itemTop{
@@ -117,11 +152,20 @@
     font-weight:800;
   }
   
+  /* ボタン群 */
   .actions{
     display:flex;
     gap:8px;
     flex-wrap:wrap;
   }
+  
+  /* ★ 10秒の下に置く用 */
+  .actions.underMeta{
+    margin-top:8px;
+  }
+  
+  /* ★ ボタンの文字色を周りに合わせる（青くならないように） */
+  button{ color: inherit; }
   
   .linkbtn{
     border:1px solid var(--line);
@@ -129,6 +173,7 @@
     border-radius:10px;
     padding:7px 10px;
     cursor:pointer;
+    color: var(--text); /* ★本文色 */
   }
   
   .linkbtn.primary{
@@ -143,124 +188,21 @@
     font-size:13px;
   }
   
-  /* inline editor */
-  .panel{
-    border-top:1px dashed var(--line);
-    padding-top:10px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
+  /* field */
   .field{
     display:flex;
     flex-direction:column;
-    gap:6px;
-  }
-  .label{
-    font-size:12px;
-    color:var(--muted);
-  }
-  .textarea{
-    width:100%;
-    min-height:70px;
-    padding:10px 12px;
-    border:1px solid var(--line);
-    border-radius:12px;
-    font-size:14px;
-    resize:vertical;
-  }
-  .inputSm{
-    width:100%;
-    padding:10px 12px;
-    border:1px solid var(--line);
-    border-radius:12px;
-    font-size:14px;
-  }
-  .panelActions{
-    display:flex;
     gap:8px;
-    flex-wrap:wrap;
   }
+  
+  .label{
+    font-size:13px;
+    color:var(--muted);
+    font-weight:700;
+  }
+  
   .hint{
     font-size:12px;
     color:var(--muted);
   }
-
-  .field{ display:flex; flex-direction:column; gap:8px; }
-  .label{ font-size:13px; color:var(--muted); font-weight:700; }
-  .hint{ font-size:12px; color:var(--muted); }
   
-  textarea.input{
-    resize: vertical;
-    min-height:52px;
-    line-height:1.35;
-  }
-  
-
-  /* === readability patch === */
-.card{ padding:16px; border-radius:16px; }
-.item{ padding:14px; gap:12px; border-radius:14px; }
-
-.title{ font-size:16px; font-weight:800; line-height:1.35; }
-.meta{ font-size:12.5px; line-height:1.5; }
-.actions{ gap:6px; }
-
-.linkbtn{ padding:6px 10px; border-radius:999px; font-size:12.5px; }
-.linkbtn.primary{ font-weight:800; }
-
-/* 分解パネルを“折りたたみ”前提で軽く */
-.details{
-  border-top:1px dashed var(--line);
-  padding-top:12px;
-}
-.summary{
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  list-style:none;
-  color:var(--muted);
-  font-weight:800;
-  user-select:none;
-}
-.summary::-webkit-details-marker{ display:none; }
-.badge{
-  font-size:12px;
-  color:var(--muted);
-  border:1px solid var(--line);
-  padding:2px 8px;
-  border-radius:999px;
-  background:#fff;
-}
-
-/* 小タスクを“行”にする（カード感を消す） */
-.checklist{
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-}
-.checkrow{
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
-  padding:10px 10px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  background: #fff;
-}
-.checkrow input{ margin-top:3px; }
-.checktext{
-  flex:1;
-  min-width:0;
-  font-size:14px;
-  line-height:1.45;
-  word-break:break-word;
-}
-.checkrow.done .checktext{
-  opacity:.55;
-  text-decoration:line-through;
-}
-
-/* 追加欄を締める */
-.row{ align-items:flex-start; }
-.input{ padding:10px 12px; }
