@@ -14,8 +14,8 @@ function loadState() {
     const s = JSON.parse(raw);
     return {
       tasks: s.tasks || [],
-      deciding: null,               // deciding は保存しない
-      showDone: s.showDone ?? false // 完了はデフォルト折りたたみ
+      deciding: null,
+      showDone: s.showDone ?? false
     };
   } catch {
     return { tasks: [], deciding: null, showDone: false };
@@ -47,6 +47,7 @@ const addBtn = document.getElementById("addBtn");
 const openListEl = document.getElementById("openList");
 const doneListEl = document.getElementById("doneList");
 const doneToggleEl = document.getElementById("doneToggle");
+const doneCardEl = document.getElementById("doneCard") || doneToggleEl?.closest(".card");
 
 // ---- state ----
 let state = loadState();
@@ -65,7 +66,9 @@ function openDecide(id) {
 function decideSave(id, value) {
   const t = findTask(id);
   if (!t) return;
-  t.step2m = value.trim();
+  const v = (value ?? "").trim();
+  if (!v) return;
+  t.step2m = v;
   state.deciding = null;
   saveState();
   render();
@@ -93,8 +96,8 @@ function removeTask(id) {
   render();
 }
 
-function toggleDone() {
-  state.showDone = !state.showDone;
+function toggleDone(next) {
+  state.showDone = (typeof next === "boolean") ? next : !state.showDone;
   saveState();
   render();
 }
@@ -107,7 +110,7 @@ function render() {
 
   const done = state.tasks
     .filter(t => t.status === "done")
-    .sort((a,b) => (b.doneAt || 0) - (a.doneAt || 0)); // 新しい完了が上
+    .sort((a,b) => (b.doneAt || 0) - (a.doneAt || 0));
 
   // ---- 未処理（open） ----
   if (open.length === 0) {
@@ -132,7 +135,6 @@ function render() {
                   }
                 </div>
 
-                <!-- ★ ボタンを10秒の下へ / 横並び -->
                 <div class="actions underMeta">
                   <button class="linkbtn primary" type="button" data-action="done" data-id="${t.id}">やった</button>
                   ${!hasStep
@@ -161,19 +163,20 @@ function render() {
     }).join("");
   }
 
-  // ---- 完了（done）折りたたみ + 閉じる導線 ----
-  doneToggleEl.textContent = `完了（${done.length}）`;
-  doneToggleEl.classList.toggle("open", state.showDone);
+  // ---- 完了（折りたたみ + 開閉わかりやすく） ----
+  if (doneToggleEl) {
+    doneToggleEl.textContent = `完了（${done.length}）`;
+    doneToggleEl.classList.toggle("open", state.showDone);
+  }
 
   if (!state.showDone) {
-    // ▼付近もタップで開けるように（大きいタップ領域）
     doneListEl.innerHTML = `
-      <button type="button" class="donePeek" aria-label="完了を開く">▼ タップして開く</button>
+      <button type="button" class="donePeek" data-done-toggle="open" aria-label="完了を開く">▼ タップして開く</button>
     `;
   } else if (done.length === 0) {
     doneListEl.innerHTML = `
       <div class="small">完了はまだない。</div>
-      <button type="button" class="doneClose" aria-label="完了を閉じる">▲ 閉じる</button>
+      <button type="button" class="doneClose" data-done-toggle="close" aria-label="完了を閉じる">▲ 閉じる</button>
     `;
   } else {
     const items = done.map(t => `
@@ -189,7 +192,6 @@ function render() {
             </div>
           </div>
 
-          <!-- ★ 完了の削除ボタンは右側（元の位置） -->
           <div class="actions">
             <button class="linkbtn" type="button" data-action="delete" data-id="${t.id}">削除</button>
           </div>
@@ -199,41 +201,51 @@ function render() {
 
     doneListEl.innerHTML = `
       ${items}
-      <button type="button" class="doneClose" aria-label="完了を閉じる">▲ 閉じる</button>
+      <button type="button" class="doneClose" data-done-toggle="close" aria-label="完了を閉じる">▲ 閉じる</button>
     `;
   }
 
-  // deciding を開いた直後、その入力欄にフォーカス
   if (state.deciding) {
     const focusEl = openListEl.querySelector(`input[data-step-input][data-for="${state.deciding}"]`);
     if (focusEl) focusEl.focus();
   }
 }
 
-// ---- events (委譲) ----
+// ---- events ----
 
-// 完了見出しで開閉（クリック + Enter/Space）
-doneToggleEl.addEventListener("click", toggleDone);
-doneToggleEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    toggleDone();
-  }
-});
+// ✅ スマホで「touch→click二重発火」して開閉が反転しないようガード
+let lastTouchAt = 0;
+function tapGuarded(handler) {
+  return (e) => {
+    // touch系が来た直後のclickは無視
+    if (e.type === "click" && Date.now() - lastTouchAt < 700) return;
+    if (e.type === "touchend") lastTouchAt = Date.now();
+    handler(e);
+  };
+}
 
-// doneList：閉じてる時はどこでも開く / 開いてる時は「閉じる」だけ反応
-doneListEl.addEventListener("click", (e) => {
-  if (!state.showDone) {
+// 完了見出し：タップで開閉（touchend優先 + click保険）
+if (doneToggleEl) {
+  doneToggleEl.addEventListener("touchend", tapGuarded((e) => { e.preventDefault(); toggleDone(); }), { passive:false });
+  doneToggleEl.addEventListener("click", tapGuarded((e) => { e.preventDefault(); toggleDone(); }));
+}
+
+// 完了カード内：▼や「閉じる」ボタンも含めて、タップで確実に開閉（イベント委譲）
+if (doneCardEl) {
+  doneCardEl.addEventListener("touchend", tapGuarded((e) => {
+    const t = e.target.closest("[data-done-toggle]");
+    if (!t) return;
     e.preventDefault();
-    toggleDone();
-    return;
-  }
-  const closeBtn = e.target.closest(".doneClose");
-  if (closeBtn) {
+    toggleDone(t.dataset.doneToggle === "open");
+  }), { passive:false });
+
+  doneCardEl.addEventListener("click", tapGuarded((e) => {
+    const t = e.target.closest("[data-done-toggle]");
+    if (!t) return;
     e.preventDefault();
-    toggleDone();
-  }
-});
+    toggleDone(t.dataset.doneToggle === "open");
+  }));
+}
 
 // クリック：open/done 両方まとめて
 function handleClick(e) {
@@ -251,16 +263,14 @@ function handleClick(e) {
   if (action === "save") {
     const input = document.querySelector(`input[data-step-input][data-for="${id}"]`);
     if (!input) return;
-    const v = input.value.trim();
-    if (!v) return;
-    decideSave(id, v);
+    decideSave(id, input.value);
   }
 }
 
 openListEl.addEventListener("click", handleClick);
 doneListEl.addEventListener("click", handleClick);
 
-// ★ 次の10秒入力欄 Enter = これにする（イベント委譲）
+// 次の10秒入力欄 Enter = これにする（イベント委譲）
 openListEl.addEventListener("keydown", (e) => {
   const inp = e.target.closest('input[data-step-input]');
   if (!inp) return;
@@ -268,10 +278,7 @@ openListEl.addEventListener("keydown", (e) => {
 
   if (e.key === "Enter") {
     e.preventDefault();
-    const id = inp.dataset.for;
-    const v = inp.value.trim();
-    if (!v) return;
-    decideSave(id, v);
+    decideSave(inp.dataset.for, inp.value);
   }
 });
 
@@ -295,14 +302,10 @@ addBtn.onclick = () => {
 };
 
 taskInput.addEventListener("keydown", (e) => {
-  // 日本語IME変換中は何もしない
   if (e.isComposing) return;
 
   if (e.key === "Enter") {
-    // Shift+Enter は改行させる
-    if (e.shiftKey) return;
-
-    // Enter 単体は追加
+    if (e.shiftKey) return; // Shift+Enter は改行
     e.preventDefault();
     addBtn.click();
   }
