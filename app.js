@@ -23,7 +23,7 @@ function saveState() {
 }
 
 function escapeHtml(str) {
-  return str
+  return String(str ?? "")
     .replaceAll("&","&amp;")
     .replaceAll("<","&lt;")
     .replaceAll(">","&gt;")
@@ -109,21 +109,23 @@ function render() {
               <span class="dotSmall"></span>
               <div>
                 <div class="title">${escapeHtml(t.title)}</div>
+
                 <div class="meta">
                   ${hasStep
                     ? `10秒：<strong>${escapeHtml(t.step2m)}</strong>`
                     : `10秒はまだ決めてない。`
                   }
                 </div>
-              </div>
-            </div>
 
-            <div class="actions">
-              <button class="linkbtn primary" data-action="done" data-id="${t.id}">やった。</button>
-              ${!hasStep
-                ? `<button class="linkbtn" data-action="start" data-id="${t.id}">最初の10秒を決める</button>`
-                : ``}
-              <button class="linkbtn" data-action="delete" data-id="${t.id}">削除</button>
+                <!-- ★ ボタンを10秒の下へ / 横並び -->
+                <div class="actions underMeta">
+                  <button class="linkbtn primary" type="button" data-action="done" data-id="${t.id}">やった。</button>
+                  ${!hasStep
+                    ? `<button class="linkbtn" type="button" data-action="start" data-id="${t.id}">最初の10秒を決める</button>`
+                    : ``}
+                  <button class="linkbtn" type="button" data-action="delete" data-id="${t.id}">削除</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -132,10 +134,10 @@ function render() {
               <div style="margin-bottom:6px;">次の10秒</div>
               <input class="input" data-step-input data-for="${t.id}" value="" />
 
-              <div class="actions" style="margin-top:8px;">
-                <button class="linkbtn primary" data-action="save" data-id="${t.id}">これにする</button>
-                <button class="linkbtn" data-action="skip">今は決めない</button>
-                <button class="linkbtn" data-action="finish" data-id="${t.id}">続きはない</button>
+              <div class="actions underMeta" style="margin-top:8px;">
+                <button class="linkbtn primary" type="button" data-action="save" data-id="${t.id}">これにする</button>
+                <button class="linkbtn" type="button" data-action="skip">今は決めない</button>
+                <button class="linkbtn" type="button" data-action="finish" data-id="${t.id}">続きはない</button>
               </div>
             </div>
           ` : ``}
@@ -149,17 +151,19 @@ function render() {
     doneListEl.innerHTML = `<div class="small">完了はまだない。</div>`;
   } else {
     doneListEl.innerHTML = done.map(t => `
-      <div class="item" style="opacity:.6;">
+      <div class="item doneItem">
         <div class="itemTop">
           <div class="left">
             <span class="dotSmall"></span>
             <div>
               <div class="title">${escapeHtml(t.title)}</div>
               ${t.step2m ? `<div class="meta">最後の10秒：<strong>${escapeHtml(t.step2m)}</strong></div>` : ``}
+
+              <!-- 完了側も同じ位置に -->
+              <div class="actions underMeta">
+                <button class="linkbtn" type="button" data-action="delete" data-id="${t.id}">削除</button>
+              </div>
             </div>
-          </div>
-          <div class="actions">
-            <button class="linkbtn" data-action="delete" data-id="${t.id}">削除</button>
           </div>
         </div>
       </div>
@@ -205,6 +209,7 @@ openListEl.addEventListener("keydown", (e) => {
   const inp = e.target.closest('input[data-step-input]');
   if (!inp) return;
 
+  // 日本語IME変換中は何もしない
   if (e.isComposing) return;
 
   if (e.key === "Enter") {
@@ -238,19 +243,18 @@ addBtn.onclick = () => {
 };
 
 taskInput.addEventListener("keydown", (e) => {
-    // 日本語IME変換中は何もしない
-    if (e.isComposing) return;
-  
-    if (e.key === "Enter") {
-      // Shift+Enter は改行させる
-      if (e.shiftKey) return;
-  
-      // Enter 単体は追加
-      e.preventDefault();
-      addBtn.click();
-    }
-  });
-  
+  // 日本語IME変換中は何もしない
+  if (e.isComposing) return;
+
+  if (e.key === "Enter") {
+    // Shift+Enter は改行させる
+    if (e.shiftKey) return;
+
+    // Enter 単体は追加
+    e.preventDefault();
+    addBtn.click();
+  }
+});
 
 // ---- start ----
 render();
