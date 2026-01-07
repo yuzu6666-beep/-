@@ -137,7 +137,7 @@
   
   .h2.toggle::after{
     content:"▾";
-    font-size:12px;
+    font-size:16px;
     opacity:.75;
   }
   
@@ -246,7 +246,7 @@
   /* ---------- small text ---------- */
   .small{
     color:var(--muted);
-    font-size:13px;
+    font-size:16px;
   }
   
   /* ---------- done toggle area ---------- */
@@ -258,7 +258,7 @@
     padding:12px;
     cursor:pointer;
     color:var(--muted);
-    font-size:14px;
+    font-size:16px;
     text-align:center;
   }
   
@@ -271,14 +271,14 @@
     padding:12px;
     cursor:pointer;
     color:var(--muted);
-    font-size:14px;
+    font-size:16px;
     text-align:center;
   }
   
   /* ---- メモ表示 ---- */
   .memoView{
     margin-top:6px;
-    font-size:14px;
+    font-size:16px;
     color:var(--muted);
     line-height:1.4;
     white-space:pre-wrap;
@@ -295,7 +295,7 @@
     padding:10px 12px;
     border:1px solid var(--line);
     border-radius:12px;
-    font-size:14px;
+    font-size:16px;
     line-height:1.4;
     resize:vertical;
   
@@ -341,4 +341,5 @@
     }
   }
   
+
 
