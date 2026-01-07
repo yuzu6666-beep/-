@@ -89,12 +89,18 @@ function removeTask(id){
 function openMemo(id){
   state.editingMemo = id;
   render();
+
+  // 表示直後にフォーカスしたい場合（次フレームで）
+  requestAnimationFrame(()=>{
+    const ta = document.querySelector(`textarea[data-memo-input][data-id="${id}"]`);
+    if (ta) ta.focus();
+  });
 }
 
 function saveMemo(id, value){
   const t = findTask(id);
   if (!t) return;
-  t.memo = value.trim();
+  t.memo = (value ?? "").trim();
   state.editingMemo = null;
   saveState();
   render();
@@ -111,6 +117,7 @@ function render(){
   } else {
     openListEl.innerHTML = open.map(t=>{
       const editing = state.editingMemo === t.id;
+
       return `
       <div class="item">
         <div class="itemTop">
@@ -124,15 +131,21 @@ function render(){
                 : ``}
 
               ${editing
-                ? `<textarea class="memoInput" data-memo-input data-id="${t.id}" rows="2"
-                    placeholder="メモを書く…">${escapeHtml(t.memo||"")}</textarea>`
+                ? `
+                  <div class="memoEdit">
+                    <textarea class="memoInput" data-memo-input data-id="${t.id}" rows="2"
+                      placeholder="メモを書く…">${escapeHtml(t.memo||"")}</textarea>
+
+                    <button class="memoSaveBtn" data-action="memo-save" data-id="${t.id}">保存</button>
+                  </div>
+                `
                 : ``}
             </div>
           </div>
 
           <div class="actions side">
             ${editing
-              ? `<button class="linkbtn primary" data-action="memo-save" data-id="${t.id}">保存</button>`
+              ? ``
               : `<button class="linkbtn" data-action="memo-open" data-id="${t.id}">メモ</button>`}
             <button class="linkbtn primary" data-action="toggle" data-id="${t.id}">完了</button>
           </div>
@@ -189,6 +202,18 @@ document.addEventListener("click", e=>{
   }
   if (action === "delete") removeTask(id);
   if (doneToggle) toggleDoneCard(doneToggle==="open");
+});
+
+// メモ編集時：Enterで保存（Shift+Enterで改行）
+document.addEventListener("keydown", e=>{
+  const ta = e.target.closest && e.target.closest("textarea[data-memo-input]");
+  if (!ta) return;
+
+  if (e.key === "Enter" && !e.shiftKey){
+    e.preventDefault();
+    const id = ta.dataset.id;
+    saveMemo(id, ta.value);
+  }
 });
 
 // ---- add ----
