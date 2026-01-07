@@ -119,11 +119,11 @@ function render() {
 
                 <!-- ★ ボタンを10秒の下へ / 横並び -->
                 <div class="actions underMeta">
-                  <button class="linkbtn primary" type="button" data-action="done" data-id="${t.id}">やった。</button>
+                  <button class="linkbtn primary" type="button" data-action="done" data-id="${t.id}">やった</button>
                   ${!hasStep
                     ? `<button class="linkbtn" type="button" data-action="start" data-id="${t.id}">最初の10秒を決める</button>`
                     : ``}
-                  <button class="linkbtn" type="button" data-action="delete" data-id="${t.id}">削除</button>
+                  <button class="linkbtn" type="button" data-action="delete" data-id="${t.id}">やらない</button>
                 </div>
               </div>
             </div>
@@ -137,7 +137,7 @@ function render() {
               <div class="actions underMeta" style="margin-top:8px;">
                 <button class="linkbtn primary" type="button" data-action="save" data-id="${t.id}">これにする</button>
                 <button class="linkbtn" type="button" data-action="skip">今は決めない</button>
-                <button class="linkbtn" type="button" data-action="finish" data-id="${t.id}">続きはない</button>
+                <button class="linkbtn" type="button" data-action="finish" data-id="${t.id}">完了</button>
               </div>
             </div>
           ` : ``}
@@ -146,8 +146,8 @@ function render() {
     }).join("");
   }
 
-  // 完了（done）別枠
-  if (done.length === 0) {
+// 完了（done）別枠 ※削除ボタンは元の位置
+if (done.length === 0) {
     doneListEl.innerHTML = `<div class="small">完了はまだない。</div>`;
   } else {
     doneListEl.innerHTML = done.map(t => `
@@ -157,18 +157,21 @@ function render() {
             <span class="dotSmall"></span>
             <div>
               <div class="title">${escapeHtml(t.title)}</div>
-              ${t.step2m ? `<div class="meta">最後の10秒：<strong>${escapeHtml(t.step2m)}</strong></div>` : ``}
-
-              <!-- 完了側も同じ位置に -->
-              <div class="actions underMeta">
-                <button class="linkbtn" type="button" data-action="delete" data-id="${t.id}">削除</button>
-              </div>
+              ${t.step2m
+                ? `<div class="meta">最後の10秒：<strong>${escapeHtml(t.step2m)}</strong></div>`
+                : ``}
             </div>
+          </div>
+  
+          <!-- ★ 完了はここ（右側） -->
+          <div class="actions">
+            <button class="linkbtn" type="button" data-action="delete" data-id="${t.id}">削除</button>
           </div>
         </div>
       </div>
     `).join("");
   }
+  
 
   // deciding を開いた直後、その入力欄にフォーカス
   if (state.deciding) {
